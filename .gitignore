@@ -1,0 +1,13 @@
+# Google Credentials & Tokens
+credentials.json
+token.json
+
+# User Data (Privasi)
+data_user.csv
+
+# System Files
+__pycache__/
+*.pyc
+.DS_Store
+.env
+venv/

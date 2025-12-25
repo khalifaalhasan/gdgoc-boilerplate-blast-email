@@ -5,9 +5,13 @@ token.json
 # User Data (Privasi)
 data_user.csv
 
-# System Files
+# System Files & Env
 __pycache__/
 *.pyc
-.DS_Store
-.env
+Env/               <-- Tambahan Lu
 venv/
+
+# Dokumen Pribadi (Yg barusan lu hapus)
+Selected.docx      <-- Tambahan Lu
+Not Selected.docx  <-- Tambahan Lu
+portfolio.html     <-- Tambahan Lu

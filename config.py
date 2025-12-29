@@ -2,7 +2,7 @@
 
 # File dan Folder
 CSV_FILENAME = "data_user.csv"
-FILE_KOMITMEN = "Commitment_Letter.pdf"
+FILE_KOMITMEN = "Commitment_Letter.docx"
 
 # Gambar Aset
 IMG_HEADER = "header.png"

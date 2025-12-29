@@ -90,6 +90,53 @@ def get_html_not_selected(nama):
     </html>
     """
 
+
+def get_html_moved(nama, divisi_baru):
+    """HTML untuk peserta yang DIPINDAH DIVISI (Tema Biru)"""
+    return f"""
+    <html>
+    <body style="margin:0; padding:0; background-color:#ffffff; font-family: 'Google Sans', Arial, sans-serif;">
+        <div style="max-width: 600px; margin: 0 auto; border: 1px solid #eeeeee;">
+            
+            <img src="cid:header_image" style="width: 100%; display: block;">
+
+            <div style="background-color: #e8f0fe; padding: 40px 30px; color: #000000; font-size: 14px; line-height: 1.6;">
+                <p style="font-weight: bold; margin-top:0;">{config.SUBJECT_EMAIL}</p>
+                <p>Annyeong, Folks!</p>
+                
+                <p>We have an important update regarding your application. While we could not place you in your initial choice of division, 
+                our team was <b>highly impressed by your potential and profile</b>.</p>
+                
+                <p>Therefore, we are excited to offer you a spot as a member of:</p>
+                <p style="font-size: 18px; font-weight: bold; color: #1967d2; text-align: center;">
+                    ✨ {divisi_baru} ✨
+                </p>
+                
+                <p>We believe your skills will thrive in this division! To accept this offer and finalize your position, please complete the following:</p>
+                <ol style="padding-left: 20px;">
+                    <li><b>Sign the Commitment Letter</b> provided below (or attached to this email).</li>
+                    <li><b>Reply to this email</b> with the signed letter within <b>24 hours</b>.</li>
+                </ol>
+                
+                <p><b>NOTE:</b> Failure to respond within <b>24 hours</b> will be considered a 
+                <b>RESIGNATION</b>.</p>
+                
+                <p>We look forward to having you on the GDG on Campus UNSRI team! Get ready to <b>Connect, Learn, and Grow!</b> &lt;&gt;</p>
+                <br>
+                <p style="margin-bottom:0;"><b>Best Regards,</b><br>
+                <b>GDG on Campus Organizer</b><br>Chapter Universitas Sriwijaya 2025/2026</p>
+            </div>
+
+            <div style="background-color: #4285f4; padding: 20px; text-align: center;">
+                <img src="cid:footer_logo" style="width: 80px; display: inline-block;">
+            </div>
+            
+        </div>
+    </body>
+    </html>
+    """
+
+
 def create_email_object(sender, to, subject, html_content, img_header_path, img_logo_path, attachment_pdf=None):
     """Fungsi Teknis Merakit Email"""
     message = MIMEMultipart('related')

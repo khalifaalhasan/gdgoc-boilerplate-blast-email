@@ -15,11 +15,11 @@ def get_html_selected(nama, divisi):
     <body style="margin:0; padding:0; background-color:#ffffff; font-family: 'Google Sans', Arial, sans-serif;">
         <div style="max-width: 600px; margin: 0 auto; border: 1px solid #eeeeee;">
             
-            <img src="cid:header_image" style="width: 100%; display: block;">
+            <img src="{config.URL_HEADER}" style="width: 100%; display: block;">
 
             <div style="background-color: #dbead5; padding: 40px 30px; color: #000000; font-size: 14px; line-height: 1.6;">
-                <p style="font-weight: bold; margin-top:0;">{config.SUBJECT_EMAIL}</p>
-                <p>Annyeong, Folks!</p>
+                <p style="font-weight: bold; margin-top:0; font-size: 16px; text-align: center;">{config.SUBJECT_EMAIL}</p>
+                <p>Annyeong, {nama}!</p>
                 
                 <p>We are absolutely delighted to share some fantastic news! Following the recruitment process, 
                 we are thrilled to inform you that you have been <b>officially SELECTED</b> as the member of 
@@ -41,7 +41,7 @@ def get_html_selected(nama, divisi):
             </div>
 
             <div style="background-color: #93c47d; padding: 20px; text-align: center;">
-                <img src="cid:footer_logo" style="width: 80px; display: inline-block;">
+                <img src="{config.URL_LOGO}" style="width: 80px; display: inline-block;">
             </div>
             
         </div>
@@ -56,11 +56,11 @@ def get_html_not_selected(nama):
     <body style="margin:0; padding:0; background-color:#ffffff; font-family: 'Google Sans', Arial, sans-serif;">
         <div style="max-width: 600px; margin: 0 auto; border: 1px solid #eeeeee;">
             
-            <img src="cid:header_image" style="width: 100%; display: block;">
+            <img src="{config.URL_HEADER}" style="width: 100%; display: block;">
 
             <div style="background-color: #fadadd; padding: 40px 30px; color: #000000; font-size: 14px; line-height: 1.6;">
-                <p style="font-weight: bold; margin-top:0;">{config.SUBJECT_EMAIL}</p>
-                <p>Annyeong, Folks!</p>
+                <p style="font-weight: bold; margin-top:0; font-size: 16px; text-align: center;">{config.SUBJECT_EMAIL}</p>
+                <p>Annyeong, {nama}!</p>
                 
                 <p>Thank you for your interest and enthusiasm in the <b>GDGoC Universitas Sriwijaya Member Recruitment 2025/2026</b>. 
                 We truly appreciate the time and effort you put into your application.</p>
@@ -82,7 +82,7 @@ def get_html_not_selected(nama):
             </div>
 
             <div style="background-color: #e06666; padding: 20px; text-align: center;">
-                <img src="cid:footer_logo" style="width: 80px; display: inline-block;">
+                <img src="{config.URL_LOGO}" style="width: 80px; display: inline-block;">
             </div>
             
         </div>
@@ -98,11 +98,11 @@ def get_html_moved(nama, divisi_baru):
     <body style="margin:0; padding:0; background-color:#ffffff; font-family: 'Google Sans', Arial, sans-serif;">
         <div style="max-width: 600px; margin: 0 auto; border: 1px solid #eeeeee;">
             
-            <img src="cid:header_image" style="width: 100%; display: block;">
+            <img src="{config.URL_HEADER}" style="width: 100%; display: block;">
 
             <div style="background-color: #e8f0fe; padding: 40px 30px; color: #000000; font-size: 14px; line-height: 1.6;">
-                <p style="font-weight: bold; margin-top:0;">{config.SUBJECT_EMAIL}</p>
-                <p>Annyeong, Folks!</p>
+                <p style="font-weight: bold; margin-top:0; font-size: 16px; text-align: center;">{config.SUBJECT_EMAIL}</p>
+                <p>Annyeong, {nama}!</p>
                 
                 <p>We have an important update regarding your application. While we could not place you in your initial choice of division, 
                 our team was <b>highly impressed by your potential and profile</b>.</p>
@@ -128,7 +128,7 @@ def get_html_moved(nama, divisi_baru):
             </div>
 
             <div style="background-color: #4285f4; padding: 20px; text-align: center;">
-                <img src="cid:footer_logo" style="width: 80px; display: inline-block;">
+                <img src="{config.URL_LOGO}" style="width: 80px; display: inline-block;">
             </div>
             
         </div>
@@ -153,15 +153,15 @@ def create_email_object(sender, to, subject, html_content, img_header_path, img_
 
     # Attach Images (Header & Logo Footer)
     # Perhatikan CID-nya: <header_image> dan <footer_logo>
-    for path, cid_name in [(img_header_path, '<header_image>'), (img_logo_path, '<footer_logo>')]:
-        if os.path.exists(path):
-            with open(path, 'rb') as f:
-                img = MIMEImage(f.read())
-                img.add_header('Content-ID', cid_name)
-                img.add_header('Content-Disposition', 'inline')
-                message.attach(img)
-        else:
-            print(f"⚠️ Warning: Gambar {path} tidak ditemukan!")
+    # for path, cid_name in [(img_header_path, '<header_image>'), (img_logo_path, '<footer_logo>')]:
+    #     if os.path.exists(path):
+    #         with open(path, 'rb') as f:
+    #             img = MIMEImage(f.read())
+    #             img.add_header('Content-ID', cid_name)
+    #             img.add_header('Content-Disposition', 'inline')
+    #             message.attach(img)
+    #     else:
+    #         print(f"⚠️ Warning: Gambar {path} tidak ditemukan!")
 
     # Attach PDF
     if attachment_pdf and os.path.exists(attachment_pdf):

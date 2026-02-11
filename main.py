@@ -1,154 +1,91 @@
-import os
 import csv
 import time
 import random
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from googleapiclient.discovery import build
+import os
+import glob
+from src import config, mailer, template
 
-import config
-import templates
+def find_certificate(name):
+    """
+    Mencari file PDF di folder certificates yang namanya mengandung string 'name'.
+    Case insensitive (Budi.pdf akan ketemu walau inputnya BUDI).
+    """
+    search_pattern = os.path.join(config.CERTIFICATES_DIR, "*.pdf")
+    files = glob.glob(search_pattern)
+    
+    # Bersihkan nama target (hapus spasi berlebih, lowercase)
+    target_name = name.strip().lower()
+    
+    for file_path in files:
+        filename = os.path.basename(file_path).lower()
+        # Logika Matching: Apakah 'nama di csv' ada di dalam 'nama file pdf'?
+        # Contoh: CSV="Budi Santoso", File="Sertifikat Budi Santoso.pdf" -> MATCH
+        if target_name in filename:
+            return file_path
+            
+    return None
 
 def main():
-    # ==========================================
-    # 1. SETUP OTENTIKASI GOOGLE (LOGIN)
-    # ==========================================
-    creds = None
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', config.SCOPES)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', config.SCOPES)
-            creds = flow.run_local_server(port=8080)
-        with open('token.json', 'w') as token:
-            token.write(creds.to_json())
-
-    service = build('gmail', 'v1', credentials=creds)
+    print("🚀 MEMULAI BLAST EMAIL GDGoC UNSRI...")
+    print(f"📂 Asset Folder: {config.ASSETS_DIR}")
     
-    # Setup Nama Pengirim agar terlihat Profesional
-    # Hasil: "GDG on Campus Unsri <dscunsri@gmail.com>"
-    SENDER_FULL_NAME = config.SENDER_EMAIL_LOG
-    
-    print(f"✅ LOGIN SUKSES! Mengirim sebagai: {SENDER_FULL_NAME}")
-    print("=" * 60)
+    # 1. Login Gmail
+    service = mailer.get_gmail_service()
+    print("✅ Login Berhasil!")
 
-    # ==========================================
-    # 2. PROSES KIRIM EMAIL
-    # ==========================================
+    # 2. Baca CSV
     try:
-        # Gunakan utf-8-sig untuk handle BOM karakter jika CSV dari Excel
-        with open(config.CSV_FILENAME, mode='r', encoding='utf-8-sig') as file:
-            reader = csv.DictReader(file)
-            
-            count = 0
-            for row in reader:
-                file_attachment = None # Reset variabel file setiap loop
-                try:
-                    # --- A. AMBIL DATA DARI CSV ---
-                    nama = row.get('Name', '').strip()
-                    email = row.get('Email', '').strip()
-                    divisi = row.get('Division', '').strip()
-                    status = row.get('Status', '').strip().lower()
+        with open(config.CSV_FILE, mode='r', encoding='utf-8-sig') as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+            total = len(rows)
+            print(f"📊 Total Data: {total} penerima\n")
 
-                    # --- FITUR PINTAR: CARI KOLOM NIM ---
-                    # Mencari key apapun yang mengandung kata "nim" (case-insensitive)
-                    # Ini solusi untuk mengatasi error KeyError: 'NIM'
-                    nim_key = next((k for k in row.keys() if k and 'nim' in k.lower()), None)
-                    nim_value = row[nim_key] if nim_key else "-"
+            for i, row in enumerate(rows):
+                # Ambil data (Handle jika nama kolom beda huruf besar/kecil)
+                # Pastikan CSV header: Nama, Email, Role
+                nama = row.get('Nama') or row.get('Name')
+                email = row.get('Email')
+                role = row.get('Role', 'Participant') # Default Participant
 
-                    # Validasi Email
-                    if not email or email == '-' or '@' not in email:
-                        print(f"⛔ SKIP: {nama} (Email Invalid)")
-                        continue
+                if not nama or not email:
+                    print(f"⚠️  Row {i+1} SKIP: Data Nama/Email kosong.")
+                    continue
 
-                    # --- B. GENERATE DOCX DINAMIS (SURAT KOMITMEN) ---
-                    # Hanya buat file jika peserta lolos (Selected/Moved)
-                    if status in ['selected', 'moved']:
-                        # 1. Data yang akan direplace ke dalam Word {{...}}
-                        context_data = {
-                            'nama_lengkap': nama,
-                            'nama_divisi': divisi,
-                            'nim_peserta': nim_value # Data NIM yang sudah diamankan
-                        }
-                        
-                        # 2. Buat nama file sementara yang unik
-                        clean_name = nama.replace(" ", "_")
-                        temp_filename = f"Commitment_{clean_name}.docx"
+                print(f"[{i+1}/{total}] Processing: {nama} ({email})...")
 
-                        # 3. Proses Generate menggunakan fungsi di templates.py
-                        is_success = templates.generate_custom_docx(config.FILE_KOMITMEN, temp_filename, context_data)
-                        
-                        if is_success:
-                            file_attachment = temp_filename
-                        else:
-                            print(f"⚠️ Warning: Gagal membuat surat komitmen untuk {nama}.")
-                            file_attachment = None
+                # 3. Cari Sertifikat
+                pdf_path = find_certificate(nama)
+                
+                if not pdf_path:
+                    print(f"   ❌ GAGAL: Sertifikat tidak ditemukan untuk '{nama}'")
+                    # Bisa tambahkan logic catat log error ke file lain disini
+                    continue
 
+                # 4. Siapkan Email
+                html_body = template.get_certificate_email_body(nama, role)
+                message = mailer.create_message(
+                    to_email=email, 
+                    subject=config.EMAIL_SUBJECT, 
+                    html_body=html_body, 
+                    pdf_path=pdf_path
+                )
 
-                    # --- C. PILIH TEMPLATE & RAKIT EMAIL ---
-                    message = None
-                    
-                    # Logic pemilihan template HTML
-                    if status == 'selected':
-                        print(f"[{count+1}] SENDING: {nama} ({email}) -> SELECTED ✅")
-                        html_body = templates.get_html_selected(nama, divisi)
-                        
-                        message = templates.create_email_object(
-                            SENDER_FULL_NAME, email, config.SUBJECT_EMAIL, 
-                            html_body, file_attachment
-                        )
-                    
-                    elif status == 'moved':
-                        print(f"[{count+1}] SENDING: {nama} ({email}) -> MOVED 🔵")
-                        html_body = templates.get_html_moved(nama, divisi) 
-                        
-                        message = templates.create_email_object(
-                            SENDER_FULL_NAME, email, config.SUBJECT_EMAIL, 
-                            html_body, file_attachment
-                        )
-                        
-                    elif status == 'not selected':
-                        print(f"[{count+1}] SENDING: {nama} ({email}) -> NOT SELECTED ❌")
-                        html_body = templates.get_html_not_selected(nama)
-                        
-                        # Kirim tanpa attachment
-                        message = templates.create_email_object(
-                            SENDER_FULL_NAME, email, config.SUBJECT_EMAIL, 
-                            html_body, None
-                        )
-                    else:
-                        # Skip jika status di CSV aneh/kosong
-                        continue
-
-                    # --- D. EKSEKUSI PENGIRIMAN ---
-                    service.users().messages().send(userId="me", body=message).execute()
-                    print("   └── 🚀 Terkirim!")
-
-                    # --- E. BERSIH-BERSIH (CLEANUP) ---
-                    # Hapus file docx sementara agar folder tidak penuh
-                    if file_attachment and os.path.exists(file_attachment):
-                        os.remove(file_attachment)
-
-                    count += 1
-                    
-                    # --- F. RATE LIMITING (ANTI SPAM) ---
-                    # Jeda acak 5-10 detik agar tidak dianggap bot spam oleh Google
-                    time.sleep(random.randint(5, 10))
-
-                except Exception as e:
-                    print(f"❌ ERROR pada baris {nama}: {e}")
-                    # Pastikan file sementara tetap dihapus meski error
-                    if file_attachment and os.path.exists(file_attachment):
-                        os.remove(file_attachment)
+                # 5. Kirim!
+                # UNCOMMENT BARIS DI BAWAH INI UNTUK MENGIRIM BENERAN
+                success = mailer.send_email(service, message)
+                
+                if success:
+                    print(f"   ✅ Email Terkirim + Attach: {os.path.basename(pdf_path)}")
+                
+                # 6. Jeda Anti-Spam
+                sleep_time = random.randint(3, 6)
+                time.sleep(sleep_time)
 
     except FileNotFoundError:
-        print(f"❌ FATAL ERROR: File CSV '{config.CSV_FILENAME}' tidak ditemukan!")
-        print("   Pastikan nama file di config.py sesuai dengan file asli.")
+        print(f"❌ ERROR: File CSV tidak ditemukan di {config.CSV_FILE}")
     except Exception as e:
-        print(f"❌ FATAL ERROR: {e}")
+        print(f"❌ UNEXPECTED ERROR: {e}")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

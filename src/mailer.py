@@ -4,7 +4,6 @@ import mimetypes
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
-from email.mime.image import MIMEImage
 from email import encoders
 
 from google.auth.transport.requests import Request
@@ -33,39 +32,20 @@ def get_gmail_service():
 
 def create_message(to_email, subject, html_body, pdf_path):
     """
-    Membuat objek email MIME Multipart Related (Untuk HTML + Embedded Image + Attachment)
+    Membuat objek email (Hanya berisi HTML Body dan PDF Attachment).
+    Sangat ringan dan clean karena gambar dipanggil via URL internet.
     """
-    # Root message (mixed) untuk menampung attachment dan konten
+    # Root message (mixed) untuk menampung konten utama dan lampiran PDF
     msg_root = MIMEMultipart('mixed')
     msg_root['to'] = to_email
     msg_root['from'] = f"{config.SENDER_NAME} <{config.SENDER_EMAIL}>"
     msg_root['subject'] = subject
 
-    # Multipart related untuk HTML dan Embedded Images
-    msg_related = MIMEMultipart('related')
-    msg_root.attach(msg_related)
-
-    # 1. Attach HTML Body
+    # 1. Attach HTML Body langsung ke Root
     msg_html = MIMEText(html_body, 'html')
-    msg_related.attach(msg_html)
+    msg_root.attach(msg_html)
 
-    # 2. Embed Header Image (cid:header_image)
-    if os.path.exists(config.HEADER_IMG):
-        with open(config.HEADER_IMG, 'rb') as f:
-            img = MIMEImage(f.read())
-            img.add_header('Content-ID', '<header_image>')
-            img.add_header('Content-Disposition', 'inline')
-            msg_related.attach(img)
-
-    # 3. Embed Footer Image (cid:footer_image)
-    if os.path.exists(config.FOOTER_IMG):
-        with open(config.FOOTER_IMG, 'rb') as f:
-            img = MIMEImage(f.read())
-            img.add_header('Content-ID', '<footer_image>')
-            img.add_header('Content-Disposition', 'inline')
-            msg_related.attach(img)
-
-    # 4. Attach PDF Sertifikat
+    # 2. Attach PDF Sertifikat
     if pdf_path and os.path.exists(pdf_path):
         ctype, encoding = mimetypes.guess_type(pdf_path)
         if ctype is None or encoding is not None:

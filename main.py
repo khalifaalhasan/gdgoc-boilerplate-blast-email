@@ -10,7 +10,7 @@ def find_certificate(name):
     Mencari file PDF di folder certificates yang namanya mengandung string 'name'.
     Case insensitive (Budi.pdf akan ketemu walau inputnya BUDI).
     """
-    search_pattern = os.path.join(config.CERTIFICATES_DIR, "*.pdf")
+    search_pattern = os.path.join(config.CERTIFICATES_DIR, "*.png")
     files = glob.glob(search_pattern)
     
     # Bersihkan nama target (hapus spasi berlebih, lowercase)
